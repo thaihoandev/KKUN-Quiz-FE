@@ -1,4 +1,6 @@
-const HeaderProfile = ({profile}: {profile: any}) => {
+import unknownAvatar from "@/assets/img/avatars/unknown.jpg"; // Default avatar image
+
+const HeaderProfile = ({ profile }: { profile: any }) => {
     return (
         <div className="row">
             <div className="col-12">
@@ -11,7 +13,7 @@ const HeaderProfile = ({profile}: {profile: any}) => {
                                     profile?.avatar &&
                                     profile.avatar.trim() !== ""
                                         ? profile.avatar
-                                        : "/assets/img/avatars/unknown.jpg"
+                                        : unknownAvatar
                                 }
                                 alt="user image"
                                 className="d-block h-auto ms-0 ms-sm-6 rounded-3 user-profile-img"

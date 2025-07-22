@@ -1,8 +1,8 @@
 "use client";
 
 import {useEffect, useState, type MouseEvent} from "react";
-import {Link, useLocation, useNavigate} from "react-router-dom";
-
+import {Link, Links, useLocation, useNavigate} from "react-router-dom";
+import logo from "@/assets/img/logo/logo192.png";
 const Header = ({profile}: {profile: any}) => {
     const [menuCollapsed, setMenuCollapsed] = useState(false);
     const [activeMenuItem, setActiveMenuItem] = useState<string>("");
@@ -85,10 +85,11 @@ const Header = ({profile}: {profile: any}) => {
             onMouseLeave={handleMouseLeave}
         >
             <div className="app-brand demo">
-                <a href="index.html" className="app-brand-link">
+                <a href="/" className="app-brand-link">
                     <span className="app-brand-logo demo">
                         <img
-                            src="/logo.png"
+                            src={logo}
+                            style={{width: "40px", height: "40px"}}
                             alt="Logo"
                             className="h-10 w-auto"
                         />

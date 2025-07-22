@@ -18,24 +18,25 @@ import QuizManagementPage     from "@/pages/quizManagement/QuizManagementPage";
 import QuizEditorPage         from "@/pages/quizManagement/QuizEditorPage";
 import QuestionCreatePage     from "@/pages/QuestionCreatePage";
 import QuestionEditorPage     from "@/pages/QuestionEditorPage";
-import WaitingRoomSessionPage from "@/pages/gameSession/WaitingRoomSessionPage";
 import Login                  from "@/pages/LoginPage";
 import Register               from "@/pages/RegisterPage";
 import NotFound               from "@/pages/NotFoundPage";
 import SettingProfilePage     from "@/pages/SettingProfilePage";
 import ChangePasswordPage     from "@/pages/ChangePasswordPage";
+import JoinGamePage from "@/pages/gameSession/JoinGamePage";
+import WaitingRoomSessionPage from "@/pages/gameSession/WaitingRoomSessionPage";
 
 const AppRoutes: React.FC = () => (
   <>
     <ScrollToTop />
     <Suspense fallback={<div>Loading...</div>}>
       <Routes>
-        
+       
 
         {/* 2) Authentication pages */}
         <Route element={<AuthLayout />}>
-          <Route path="/login"    element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="login"    element={<Login />} />
+          <Route path="register" element={<Register />} />
         </Route>
 
         {/* 3) Main application */}
@@ -54,20 +55,12 @@ const AppRoutes: React.FC = () => (
           <Route path="change-password"   element={<ChangePasswordPage />} />
         </Route>
 
-        {/* 4) Single-layout for editors */}
-        <Route element={<SingleLayout />}>
-          <Route
-            path="/quizzes/:quizId/edit"
-            element={<QuizEditorPage />}
-          />
-          <Route
-            path="/quizzes/:quizId/questions/create"
-            element={<QuestionCreatePage />}
-          />
-          <Route
-            path="/quizzes/:quizId/questions/:questionId/edit"
-            element={<QuestionEditorPage />}
-          />
+        <Route path="/" element={<SingleLayout />}>
+          <Route path="game-session/:gameId" element={<WaitingRoomSessionPage />} />
+          <Route path="join-game/:pinCode" element={<JoinGamePage />} />
+          <Route path="quizzes/:quizId/edit" element={<QuizEditorPage />} />
+          <Route path="quizzes/:quizId/questions/create" element={<QuestionCreatePage />} />
+          <Route path="quizzes/:quizId/questions/:questionId/edit" element={<QuestionEditorPage />} />
         </Route>
 
         {/* 5) 404 catch-all */}

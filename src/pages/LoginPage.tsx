@@ -1,5 +1,6 @@
 import FormLogin from "@/components/forms/FormLogin";
 import React from "react";
+import backgroundImage from "@/assets/img/illustrations/boy-with-rocket-light.png";
 
 const LoginPage = () => {
     return (
@@ -9,7 +10,7 @@ const LoginPage = () => {
                 <div className="d-none d-lg-flex col-lg-7 col-xl-8 align-items-center p-5">
                     <div className="w-100 d-flex justify-content-center">
                         <img
-                            src="../../assets/img/illustrations/boy-with-rocket-light.png"
+                            src={backgroundImage}
                             className="img-fluid"
                             alt="Login image"
                             width="700"

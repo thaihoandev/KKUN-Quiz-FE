@@ -6,6 +6,8 @@ import {useNavigate} from "react-router-dom";
 import QuizDropdown from "../dropdowns/QuizDropdown";
 import {createGameSession} from "@/services/gameService";
 
+import unknownAvatar from "@/assets/img/avatars/unknown.jpg"; // Default avatar image
+
 // Define types matching your Java model
 export interface UserDto {
     userId: string;
@@ -98,7 +100,7 @@ const QuizSubCard: React.FC<QuizCardProps> = ({quiz}) => {
                 {/* Host Information */}
                 <div className="d-flex align-items-center mb-3">
                     <img
-                        src={quiz.host.avatar || "/placeholder.svg"}
+                        src={quiz.host.avatar || unknownAvatar}
                         alt={quiz.host.name}
                         className="rounded-circle border border-2 border-light me-2"
                         width="36"
@@ -146,7 +148,7 @@ const QuizSubCard: React.FC<QuizCardProps> = ({quiz}) => {
                             {quiz.viewers.slice(0, 3).map((user, index) => (
                                 <img
                                     key={`${user.userId}-viewer`}
-                                    src={user.avatar || "/placeholder.svg"}
+                                    src={user.avatar || unknownAvatar}
                                     alt={user.name}
                                     className="rounded-circle border-2 border-white"
                                     width="28"
@@ -196,7 +198,7 @@ const QuizSubCard: React.FC<QuizCardProps> = ({quiz}) => {
                             {quiz.editors.slice(0, 3).map((user, index) => (
                                 <img
                                     key={`${user.userId}-editor`}
-                                    src={user.avatar || "/placeholder.svg"}
+                                    src={user.avatar || unknownAvatar}
                                     alt={user.name}
                                     className="rounded-circle border-2 border-white"
                                     width="28"

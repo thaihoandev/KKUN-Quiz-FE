@@ -12,6 +12,10 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 import AppRoutes from './routes';
 import { Suspense } from 'react';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 
 notification.config({
@@ -22,12 +26,14 @@ notification.config({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ConfigProvider getPopupContainer={() => document.body}>
-      <BrowserRouter>
-        <Suspense fallback={<div>Loading...</div>}>
-          <AppRoutes />
-        </Suspense>
-      </BrowserRouter>
-    </ConfigProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>  {/* <<< bọc toàn App */}
+      <ConfigProvider getPopupContainer={() => document.body}>
+        <BrowserRouter>
+          <Suspense fallback={<div>Loading...</div>}>
+            <AppRoutes />
+          </Suspense>
+        </BrowserRouter>
+      </ConfigProvider>
+    </GoogleOAuthProvider>
   </StrictMode>
 );

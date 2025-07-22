@@ -3,7 +3,7 @@ import {useEffect} from "react";
 const HomePage = () => {
     useEffect(() => {
         const script = document.createElement("script");
-        script.src = "/assets/js/app-academy-course.js";
+        script.src = "@/assets/js/app-academy-course.js";
         script.async = true;
         document.body.appendChild(script);
 
@@ -700,83 +700,7 @@ const HomePage = () => {
                     </div>
                 </div>
 
-                <div className="card">
-                    <div className="card-body row gy-6">
-                        <div className="col-sm-12 col-lg-4 text-center pt-md-12 px-4">
-                            <span className="badge bg-label-primary rounded mb-4 p-2">
-                                <i className="icon-base bx bx-gift icon-36px"></i>
-                            </span>
-                            <h4 className="card-title mb-4">
-                                Todays Free Courses
-                            </h4>
-                            <p className="card-text">
-                                We offers 284 Free Online courses from top
-                                tutors and companies to help you start or
-                                advance your career skills. Learn online for
-                                free and fast today!
-                            </p>
-                            <button className="btn btn-primary">
-                                Get premium courses
-                            </button>
-                        </div>
-                        <div className="col-12 col-md-6 col-lg-4">
-                            <div className="card h-100 shadow-none border">
-                                <div className="p-2 pb-0 ">
-                                    <video
-                                        className="w-100 rounded"
-                                        poster="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-HD.jpg"
-                                        id="guitar-video-player"
-                                        playsInline
-                                        controls
-                                    >
-                                        <source
-                                            src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-576p.mp4"
-                                            type="video/mp4"
-                                        />
-                                    </video>
-                                </div>
-                                <div className="card-body">
-                                    <h5 className="card-title">
-                                        Your First Singing Lesson
-                                    </h5>
-                                    <p className="card-text">
-                                        In the same way as any other artistic
-                                        domain, singing lends itself perfectly
-                                        to self-teaching.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="col-12 col-md-6 col-lg-4">
-                            <div className="card h-100 shadow-none border">
-                                <div className="p-2 pb-0">
-                                    <video
-                                        className="w-100 rounded"
-                                        poster="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-HD.jpg"
-                                        id="guitar-video-player-2"
-                                        playsInline
-                                        controls
-                                    >
-                                        <source
-                                            src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-576p.mp4"
-                                            type="video/mp4"
-                                        />
-                                    </video>
-                                </div>
-                                <div className="card-body">
-                                    <h5 className="card-title">
-                                        Guitar for Beginners
-                                    </h5>
-                                    <p className="card-text">
-                                        The Fender Acoustic Guitar is the best
-                                        choice for both beginners and
-                                        professionals offering a great sound.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                
             </div>
         </div>
     );

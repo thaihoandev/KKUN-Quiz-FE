@@ -1,6 +1,6 @@
+import { UserRequestDTO } from "@/interfaces";
 import axiosInstance from "./axiosInstance";
 import {handleApiError} from "@/utils/apiErrorHandler";
-import {UserRequestDTO} from "@/interfaces";
 
 const API_URL = `${import.meta.env.VITE_BASE_API_URL}/auth`;
 

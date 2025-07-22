@@ -1,6 +1,8 @@
 import React, {useEffect, useState} from "react";
 import {Link, useNavigate} from "react-router-dom";
-import {useAuth} from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
+
+import unknownAvatar from "@/assets/img/avatars/unknown.jpg"; // Default avatar image
 const UserDropdown = ({profile}: {profile: any}) => {
     const navigate = useNavigate();
     const {user, logout} = useAuth(); // Lấy thông tin user và hàm logout từ Zustand
@@ -22,7 +24,7 @@ const UserDropdown = ({profile}: {profile: any}) => {
                         src={
                             profile?.avatar && profile.avatar.trim() !== ""
                                 ? profile.avatar
-                                : "/assets/img/avatars/unknown.jpg"
+                                : unknownAvatar
                         }
                         className="rounded-circle"
                         alt={profile?.name}
@@ -40,7 +42,7 @@ const UserDropdown = ({profile}: {profile: any}) => {
                                             profile?.avatar &&
                                             profile.avatar.trim() !== ""
                                                 ? profile.avatar
-                                                : "/assets/img/avatars/unknown.jpg"
+                                                : unknownAvatar
                                         }
                                         className="w-px-40 h-auto rounded-circle"
                                         alt={profile?.name || "Unknown"}

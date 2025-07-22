@@ -6,13 +6,14 @@ import PasswordField from "@/components/formFields/PasswordField";
 import {Link, useNavigate} from "react-router-dom";
 import {useState} from "react";
 import {useAuth} from "@/hooks/useAuth";
+import { useGoogleLogin } from "@react-oauth/google";
 
 const FormLogin = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
-    const {login} = useAuth();
+    const {login, loginWithGoogle} = useAuth();
 
     const {
         register,
@@ -28,12 +29,24 @@ const FormLogin = () => {
         try {
             await login(data.username, data.password);
             navigate("/"); // Chuyển hướng khi đăng nhập thành công
-        } catch (error) {
-            setErrorMessage(error as string);
+        } catch (error: any) {
+            setErrorMessage(error?.message || "Login failed. Please try again.");
         } finally {
             setLoading(false);
         }
     };
+
+    const googleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                await loginWithGoogle(tokenResponse);
+                navigate("/"); // Chuyển hướng sau khi đăng nhập thành công
+            } catch (error) {
+                console.error("Google Login Failed:", error);
+            }
+        },
+        onError: () => console.log("Google Login Failed"),
+    });
 
     return (
         <div className="d-flex col-12 col-lg-5 col-xl-4 align-items-center authentication-bg p-sm-12 p-6">
@@ -110,6 +123,30 @@ const FormLogin = () => {
                         <span> Create an account</span>
                     </Link>
                 </p>
+
+                <div className="divider my-6">
+                    <div className="divider-text">or</div>
+                </div>
+
+                {/* Social Login */}
+                <div className="d-flex justify-content-center">
+                    {/* <a href="#" onClick={(e) => e.preventDefault()} className="btn btn-sm btn-icon rounded-circle btn-text-facebook me-2">
+                        <i className="icon-base bx bxl-facebook-circle icon-40px"></i>
+                    </a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="btn btn-sm btn-icon rounded-circle btn-text-twitter me-2">
+                        <i className="icon-base bx bxl-twitter icon-40px"></i>
+                    </a>
+                    <a href="#" onClick={(e) => e.preventDefault()} className="btn btn-sm btn-icon rounded-circle btn-text-github me-2">
+                        <i className="icon-base bx bxl-github icon-40px"></i>
+                    </a> */}
+                    <a
+                        href="#"
+                        onClick={() => googleLogin()}
+                        className="btn btn-sm btn-icon rounded-circle btn-text-google-plus"
+                    >
+                        <i className="icon-base bx bxl-google icon-40px"></i>
+                    </a>
+                </div>
             </div>
         </div>
     );

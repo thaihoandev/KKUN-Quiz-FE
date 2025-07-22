@@ -55,7 +55,7 @@ const QuizzesPage = () => {
     const archivedQuizzes = quizzes.filter(
         (quiz) => quiz.status === "ARCHIVED",
     );
-
+    
     const handleCreateQuiz = () => {
         setShowCreateModal(true); // Show the modal
     };

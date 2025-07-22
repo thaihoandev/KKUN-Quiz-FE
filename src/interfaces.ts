@@ -54,3 +54,22 @@ export interface Quiz {
     viewers: string[];
     editors: string[];
 }
+export interface CreateGameSessionResponse {
+  gameId: string;
+  quizId: string;
+  hostId: string;
+  pinCode: string;
+  status: "WAITING" | "IN_PROGRESS" | "COMPLETED";
+  startTime: string;
+  endTime: string | null;
+}
+export interface PlayerResponse {
+  playerId: string;
+  nickname: string;
+  gameId: string;
+  score: number;
+  inGame: boolean;
+  userId?: string;
+  avatar?: string;
+  joinedAt?: string;
+}
