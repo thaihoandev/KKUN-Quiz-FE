@@ -1,54 +1,109 @@
-import { PlayerResponse, CreateGameSessionResponse } from "@/interfaces";
 import axiosInstance from "./axiosInstance";
 import { handleApiError } from "@/utils/apiErrorHandler";
 
+// Định nghĩa interface cho PlayerRequestDTO
+interface PlayerRequestDTO {
+  playerSession: string | null;
+  nickname: string;
+  isAnonymous: boolean;
+  score: number;
+}
+
+// Định nghĩa interface cho PlayerResponseDTO
+interface PlayerResponseDTO {
+  playerId: string;
+  gameId: string;
+  userId?: string | null;
+  nickname: string;
+  score: number;
+  anonymous: boolean;
+  inGame: boolean;
+}
+
+// Định nghĩa interface cho GameResponseDTO
+interface GameResponseDTO {
+  gameId: string;
+  quizId: string;
+  hostId: string;
+  pinCode: string;
+  status: "WAITING" | "IN_PROGRESS" | "COMPLETED";
+  startTime: string;
+  endTime: string | null;
+}
+
+// Định nghĩa interface cho GameDetailsResponseDTO
+interface GameDetailsResponseDTO {
+  game: GameResponseDTO;
+  players: PlayerResponseDTO[];
+  title: string; // Thêm trường title nếu cần
+}
+
+// Định nghĩa interface cho CreateGameSessionResponse
+interface CreateGameSessionResponse {
+  gameId: string;
+  pinCode: string;
+  quizId: string;
+  hostId: string;
+  status: string;
+  startTime: string;
+  endTime: string | null;
+}
+
+// Hàm tham gia phòng game
 export const joinGame = async (
   pinCode: string,
   nickname: string,
-  token?: string,
   playerSession?: string
-): Promise<PlayerResponse> => {
-  if (!nickname || nickname.trim() === "") {
+): Promise<PlayerResponseDTO> => {
+  if (!nickname.trim()) {
     throw new Error("Nickname cannot be empty");
   }
 
   try {
-    console.log("Joining game with pinCode:", pinCode, "nickname:", nickname, "playerSession:", playerSession);
-    const response = await axiosInstance.post(
+    const response = await axiosInstance.post<PlayerResponseDTO>(
       `/games/join?pinCode=${pinCode}`,
       {
         nickname: nickname.trim(),
         playerSession: playerSession || null,
-        isAnonymous: !token, // Nếu không có token, đánh dấu là anonymous
-        score: 0, // Đặt score mặc định là 0
-      },
-      {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        timeout: 10000, // Timeout 10 giây
-      }
+        isAnonymous: true,
+        score: 0,
+      } as PlayerRequestDTO
     );
-
-    console.log("Join game response status:", response.status);
-    console.log("Joined game successfully:", response.data);
-    return response.data as PlayerResponse;
+    if (response.data.playerId) {
+      localStorage.setItem("playerSession", response.data.playerId); // Lưu playerId làm session
+    }
+    return response.data;
   } catch (error) {
-    console.error("Error joining game:", error);
     handleApiError(error);
     throw error;
   }
 };
 
+// Hàm lấy thông tin game và danh sách người chơi
+export const fetchGameData = async (gameId: string): Promise<GameDetailsResponseDTO> => {
+  try {
+    const response = await axiosInstance.get<GameDetailsResponseDTO>(`/games/${gameId}/details`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw new Error("Failed to fetch game data");
+  }
+};
+
+// Hàm tạo phiên game
 export const createGameSession = async (
   quizId: string
 ): Promise<CreateGameSessionResponse> => {
   try {
     console.log("Creating game session for quizId:", quizId);
-    const response = await axiosInstance.post(`/games/create`, {
-      quizId,
-    });
-
+    const response = await axiosInstance.post<CreateGameSessionResponse>(
+      `/games/create`,
+      {
+        quizId,
+      }
+    );
     console.log("Create game session response:", response.data);
-    return response.data as CreateGameSessionResponse;
+    return response.data;
   } catch (error) {
     console.error("Error creating game session:", error);
     handleApiError(error);
@@ -56,6 +111,7 @@ export const createGameSession = async (
   }
 };
 
+// Hàm hủy game
 export const cancelGame = async (gameId: string): Promise<void> => {
   try {
     console.log("Canceling game:", gameId);
@@ -64,11 +120,13 @@ export const cancelGame = async (gameId: string): Promise<void> => {
     console.log("Game canceled successfully:", response.data);
   } catch (error) {
     console.error("Error canceling game:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     throw new Error(errorMessage);
   }
 };
 
+// Hàm bắt đầu game
 export const startGame = async (gameId: string): Promise<void> => {
   try {
     console.log("Starting game:", gameId);
@@ -77,7 +135,8 @@ export const startGame = async (gameId: string): Promise<void> => {
     console.log("Game started successfully:", response.data);
   } catch (error) {
     console.error("Error starting game:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     throw new Error(errorMessage);
   }
 };

@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import SockJS from "sockjs-client";
-import { Client, IMessage } from "@stomp/stompjs";
-import axiosInstance from "@/services/axiosInstance";
-import { cancelGame, startGame } from "@/services/gameService";
+import { Client } from "@stomp/stompjs";
+import { cancelGame, startGame, fetchGameData } from "@/services/gameService";
 import unknownAvatar from "@/assets/img/avatars/unknown.jpg";
 
 import avatar1 from "@/assets/img/avatars/1.png";
@@ -23,9 +22,9 @@ import avatar12 from "@/assets/img/avatars/12.png";
 import avatar13 from "@/assets/img/avatars/13.png";
 import avatar14 from "@/assets/img/avatars/14.png";
 import avatar15 from "@/assets/img/avatars/15.png";
+import { useAuth } from "@/hooks/useAuth";
 
-
-// Danh sách avatar (sử dụng import tĩnh tạm thời)
+// Danh sách avatar
 const AVATAR_LIST = [
   avatar1,
   avatar2,
@@ -42,29 +41,19 @@ const AVATAR_LIST = [
   avatar13,
   avatar14,
   avatar15,
-  ,
 ];
 
-// Define types for game session data
-interface GameSession {
+// Define types
+interface GameResponseDTO {
   gameId: string;
   quizId: string;
   hostId: string;
   pinCode: string;
-  status: "WAITING" | "STARTED" | "COMPLETED";
+  status: "WAITING" | "IN_PROGRESS" | "COMPLETED";
   startTime: string;
   endTime: string | null;
 }
 
-// Define type for player, matching backend PlayerResponseDTO
-interface Player {
-  playerId: string;
-  nickname: string;
-  avatar?: string;
-  joinedAt: string;
-}
-
-// Type for WebSocket message payload (PlayerResponseDTO from backend)
 interface PlayerResponseDTO {
   playerId: string;
   nickname: string;
@@ -72,28 +61,44 @@ interface PlayerResponseDTO {
   score: number;
   inGame: boolean;
   userId?: string;
+  isAnonymous: boolean;
+}
+
+interface GameDetailsResponseDTO {
+  game: GameResponseDTO;
+  players: PlayerResponseDTO[];
+}
+
+interface Player {
+  playerId: string;
+  nickname: string;
   avatar?: string;
-  joinedAt?: string;
+  joinedAt: string;
 }
 
 const WaitingRoomSessionPage: React.FC = () => {
   console.log("WaitingRoomSessionPage component loaded");
   const { gameId } = useParams<{ gameId: string }>();
-  const location = useLocation();
   const navigate = useNavigate();
   const WS_ENDPOINT = import.meta.env.VITE_WS_URL || "http://localhost:8080/ws";
   const API_BASE_URL = import.meta.env.VITE_BASE_API_URL || "http://localhost:8080/api";
 
-  const [gameData, setGameData] = useState<GameSession | null>(null);
+  const { user } = useAuth(); // Lấy user từ useAuthStore
+  console.log("User from auth store:", user);
+
+  const [gameData, setGameData] = useState<GameResponseDTO | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [quizTitle, setQuizTitle] = useState<string>("");
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
-
-  // State để theo dõi các avatar đã sử dụng
   const [usedAvatars, setUsedAvatars] = useState<Set<string>>(new Set());
+
+  const isHost = useMemo(() => {
+    return user?.userId && gameData?.hostId ? user.userId === gameData.hostId : false;
+  }, [user, gameData]);
+  console.log("isHost:", isHost, "user:", user, "gameData:", gameData);
 
   useEffect(() => {
     if (!gameId) {
@@ -102,16 +107,30 @@ const WaitingRoomSessionPage: React.FC = () => {
       return;
     }
 
-    const state = location.state as { gameData?: GameSession; quizTitle?: string } | null;
-    if (state?.gameData) {
-      setGameData(state.gameData);
-      setQuizTitle(state.quizTitle || "Quiz Game");
-      setIsLoading(false);
-    } else {
-      setError("No game data provided in location state");
-      setIsLoading(false);
-    }
-  }, [gameId, location.state]);
+    const fetchData = async () => {
+      try {
+        const data = await fetchGameData(gameId);
+        setGameData(data.game);
+        setPlayers(
+          data.players
+            .filter((p) => p.inGame)
+            .map((p) => ({
+              playerId: p.playerId,
+              nickname: p.nickname || "Unknown Player",
+              avatar: assignRandomAvatar(),
+              joinedAt: new Date().toISOString(),
+            }))
+        );
+        setQuizTitle(data.title || "Quiz Game"); // Sử dụng title từ API, fallback là "Quiz Game"
+        setIsLoading(false);
+      } catch (err) {
+        setError("Failed to load game data");
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [gameId]);
 
   useEffect(() => {
     if (!gameId) return;
@@ -136,19 +155,12 @@ const WaitingRoomSessionPage: React.FC = () => {
           if (Array.isArray(parsedData)) {
             const newPlayers: Player[] = parsedData
               .filter((p: PlayerResponseDTO) => p.inGame)
-              .map((p: PlayerResponseDTO) => {
-                let avatar = p.avatar;
-                if (!avatar || avatar === unknownAvatar) {
-                  avatar = assignRandomAvatar();
-                  console.log(`Assigned random avatar to ${p.nickname}: ${avatar}`);
-                }
-                return {
-                  playerId: p.playerId,
-                  nickname: p.nickname || "Unknown Player",
-                  avatar,
-                  joinedAt: p.joinedAt || new Date().toISOString(),
-                };
-              });
+              .map((p: PlayerResponseDTO) => ({
+                playerId: p.playerId,
+                nickname: p.nickname || "Unknown Player",
+                avatar: assignRandomAvatar(),
+                joinedAt: new Date().toISOString(),
+              }));
             setPlayers((prevPlayers) => {
               const playersChanged = !arraysEqual(prevPlayers, newPlayers);
               if (playersChanged) return newPlayers;
@@ -163,9 +175,12 @@ const WaitingRoomSessionPage: React.FC = () => {
       client.subscribe(`/topic/game/${gameId}/status`, (message) => {
         console.log("Received status update:", message.body);
         try {
-          const statusUpdate: GameSession = JSON.parse(message.body);
-          if (statusUpdate.status === "STARTED") navigate(`/game-play/${gameId}`);
-          else if (statusUpdate.status === "COMPLETED") navigate("/quizzes");
+          const statusUpdate: GameResponseDTO = JSON.parse(message.body);
+          if (statusUpdate.status === "IN_PROGRESS") {
+            navigate(`/game-play/${gameId}`);
+          } else if (statusUpdate.status === "COMPLETED") {
+            navigate("/quizzes");
+          }
         } catch (error) {
           console.error("Error parsing status message:", error);
         }
@@ -200,13 +215,11 @@ const WaitingRoomSessionPage: React.FC = () => {
       setWsConnected(false);
       setStompClient(null);
     };
-  }, [gameId]);
+  }, [gameId, navigate]);
 
-  // Hàm gán avatar ngẫu nhiên không trùng lặp
   const assignRandomAvatar = (): string => {
     const availableAvatars = AVATAR_LIST.filter((avatar) => !usedAvatars.has(avatar.toString()));
     if (availableAvatars.length === 0) {
-      // Reset usedAvatars nếu đã dùng hết
       setUsedAvatars(new Set());
       const randomAvatar = AVATAR_LIST[Math.floor(Math.random() * AVATAR_LIST.length)] || unknownAvatar;
       console.log("All avatars used, resetting and assigning:", randomAvatar);
@@ -218,7 +231,7 @@ const WaitingRoomSessionPage: React.FC = () => {
     return randomAvatar.toString();
   };
 
-  const arraysEqual = (arr1: Player[], arr2: Player[]) => {
+  const arraysEqual = (arr1: Player[], arr2: Player[]): boolean => {
     if (arr1.length !== arr2.length) return false;
     return arr1.every((item, index) => JSON.stringify(item) === JSON.stringify(arr2[index]));
   };
@@ -288,7 +301,6 @@ const WaitingRoomSessionPage: React.FC = () => {
   }, [players]);
 
   if (isLoading) {
-    console.log("Rendering loading state");
     return (
       <div className="container d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
         <div className="text-center">
@@ -303,7 +315,6 @@ const WaitingRoomSessionPage: React.FC = () => {
   }
 
   if (error) {
-    console.log("Rendering error state:", error);
     return (
       <div className="container text-center py-5">
         <div className="alert alert-danger">
@@ -326,7 +337,6 @@ const WaitingRoomSessionPage: React.FC = () => {
   }
 
   if (!gameData) {
-    console.log("Rendering no game data state");
     return (
       <div className="container text-center py-5">
         <div className="alert alert-warning">
@@ -342,8 +352,6 @@ const WaitingRoomSessionPage: React.FC = () => {
     );
   }
 
-  console.log("Rendering main component with game data:", gameData);
-  console.log("Rendering players list with:", memoizedPlayers);
   return (
     <div className="container py-5">
       <div className="row justify-content-center">
@@ -352,7 +360,7 @@ const WaitingRoomSessionPage: React.FC = () => {
             <div className="card-header bg-primary text-white py-4">
               <h3 className="mb-0 text-center">{quizTitle}</h3>
               <p className="text-center mb-0 mt-2 text-white-50">
-                Game Session
+                {isHost ? "Game Session" : "Waiting Room"}
                 {!wsConnected && (
                   <span className="ms-2 badge bg-warning">
                     <i className="bx bx-wifi-off me-1"></i>
@@ -369,27 +377,31 @@ const WaitingRoomSessionPage: React.FC = () => {
             </div>
 
             <div className="card-body p-4">
-              {/* Game Pin Section */}
               <div className="text-center mb-5">
                 <h4 className="mb-3">Game PIN</h4>
                 <div className="d-flex justify-content-center align-items-center">
                   <div className="pin-code-display bg-light py-3 px-5 rounded-3 d-inline-block">
                     <h1 className="display-4 mb-0 fw-bold">{gameData.pinCode}</h1>
                   </div>
-                  <button className="btn btn-outline-primary ms-3" onClick={copyPinCode} title="Copy PIN">
-                    <i className="bx bx-copy"></i>
-                  </button>
+                  {isHost && (
+                    <button className="btn btn-outline-primary ms-3" onClick={copyPinCode} title="Copy PIN">
+                      <i className="bx bx-copy"></i>
+                    </button>
+                  )}
                 </div>
-                <p className="text-muted mt-3">Share this PIN with your participants to join the game</p>
+                <p className="text-muted mt-3">
+                  {isHost
+                    ? "Share this PIN with your participants to join the game"
+                    : "Joined game with PIN: " + gameData.pinCode}
+                </p>
               </div>
 
-              {/* Players Section */}
               <div className="mb-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h4 className="mb-0">Players ({memoizedPlayers.length})</h4>
                   <span className="badge bg-success py-2 px-3">
                     <i className="bx bx-time me-1"></i>
-                    Waiting for players...
+                    {isHost ? "Waiting for players..." : "Waiting for host to start the game..."}
                   </span>
                 </div>
 
@@ -407,7 +419,7 @@ const WaitingRoomSessionPage: React.FC = () => {
                           <div className="card-body py-2 px-3">
                             <div className="d-flex align-items-center">
                               <img
-                                src={player.avatar || unknownAvatar} // Sử dụng avatar đã gán
+                                src={player.avatar || unknownAvatar}
                                 alt={player.nickname}
                                 className="rounded-circle me-3"
                                 width="40"
@@ -435,7 +447,6 @@ const WaitingRoomSessionPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Connection Status Warning */}
               {!wsConnected && (
                 <div className="alert alert-warning mb-4">
                   <i className="bx bx-wifi-off me-2"></i>
@@ -443,31 +454,31 @@ const WaitingRoomSessionPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="d-flex justify-content-between mt-4">
-                <button
-                  className="btn btn-outline-danger"
-                  onClick={handleCancelGame}
-                >
-                  <i className="bx bx-x me-2"></i>
-                  Cancel Game
-                </button>
+              {isHost && (
+                <div className="d-flex justify-content-between mt-4">
+                  <button
+                    className="btn btn-outline-danger"
+                    onClick={handleCancelGame}
+                  >
+                    <i className="bx bx-x me-2"></i>
+                    Cancel Game
+                  </button>
 
-                <button
-                  className="btn btn-success"
-                  onClick={handleStartGame}
-                  disabled={memoizedPlayers.length === 0}
-                  title={memoizedPlayers.length === 0 ? "Need at least 1 player to start" : "Start the game"}
-                >
-                  <i className="bx bx-play me-2"></i>
-                  Start Game
-                  {memoizedPlayers.length === 0 && (
-                    <span className="ms-2 badge bg-light text-dark">Need players</span>
-                  )}
-                </button>
-              </div>
+                  <button
+                    className="btn btn-success"
+                    onClick={handleStartGame}
+                    disabled={memoizedPlayers.length === 0}
+                    title={memoizedPlayers.length === 0 ? "Need at least 1 player to start" : "Start the game"}
+                  >
+                    <i className="bx bx-play me-2"></i>
+                    Start Game
+                    {memoizedPlayers.length === 0 && (
+                      <span className="ms-2 badge bg-light text-dark">Need players</span>
+                    )}
+                  </button>
+                </div>
+              )}
 
-              {/* Debug Info (remove in production) */}
               {process.env.NODE_ENV === "development" && (
                 <div className="mt-4 p-3 bg-light rounded small">
                   <strong>Debug Info:</strong>
@@ -481,6 +492,8 @@ const WaitingRoomSessionPage: React.FC = () => {
                   WebSocket URL: {WS_ENDPOINT}
                   <br />
                   Players Count: {memoizedPlayers.length}
+                  <br />
+                  Is Host: {isHost ? "Yes" : "No"}
                 </div>
               )}
             </div>
